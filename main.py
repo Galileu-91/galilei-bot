@@ -210,10 +210,10 @@ class MenuSimulado(View):
 # 5. Inicialização Segura (Padrão de Ciência de Dados)
 if __name__ == "__main__":
     if TOKEN:
-        keep_alive()  
-       import time
+        keep_alive()
+        import time
         print("⏳ Aguardando 10 segundos para estabilizar conexão...")
-        time.sleep(10) # Dá um respiro para a rede
+        time.sleep(10)
         bot.run(TOKEN)
     else:
-        print("❌ ERRO: DISCORD_TOKEN não encontrado nas Environment Variables!")
+        print("❌ ERRO: DISCORD_TOKEN não encontrado!")
