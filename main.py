@@ -188,17 +188,20 @@ async def menu(ctx):
 async def on_ready():
     print(f"✅ Galilei#0213 Online | Visual Alfredo | Sistema de Threads")
 
-# --- INICIALIZAÇÃO SEGURA ---
+# --- INICIALIZAÇÃO SEGURA (Versão Final) ---
 if __name__ == "__main__":
     if TOKEN:
-        print("🚀 Iniciando servidor de manutenção...")
-        keep_alive()
-        
-        # Remova o sleep de 30s por um momento para ver o erro IMEDIATO
-        print("🤖 Tentando conectar o Galilei ao Discord...")
+        print("🚀 Iniciando servidor de manutenção Flask...")
         try:
-            bot.run(TOKEN)
+            keep_alive() # Inicia o servidor web em uma Thread separada
+            
+            print("🤖 Tentando conectar o Galilei ao Discord agora...")
+            # bot.run é o comando que realmente "liga" o bot
+            bot.run(TOKEN) 
+            
         except Exception as e:
-            print(f"❌ ERRO FATAL: {e}") # Isso vai cuspir o erro real no log
+            # Se houver erro de Token ou rede, aparecerá aqui no log do Render
+            print(f"❌ ERRO FATAL AO LIGAR O BOT: {e}")
     else:
-        print("❌ ERRO: DISCORD_TOKEN está vazio no sistema.")
+        # Se cair aqui, você precisa checar o nome da variável no painel do Render
+        print("❌ ERRO: A variável 'DISCORD_TOKEN' não foi encontrada no ambiente.")
