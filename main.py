@@ -191,18 +191,14 @@ async def on_ready():
 # --- INICIALIZAÇÃO SEGURA ---
 if __name__ == "__main__":
     if TOKEN:
-        # 1. Inicia o Flask
+        print("🚀 Iniciando servidor de manutenção...")
         keep_alive()
         
-        # 2. Aguarda estabilizar
-        import time
-        print("⏳ Aguardando 30 segundos...")
-        time.sleep(30)
-        
-        # 3. Tenta rodar o bot (Alinhado com o keep_alive)
+        # Remova o sleep de 30s por um momento para ver o erro IMEDIATO
+        print("🤖 Tentando conectar o Galilei ao Discord...")
         try:
-            bot.run(TOKEN) # 4 espaços de recuo aqui
+            bot.run(TOKEN)
         except Exception as e:
-            print(f"❌ Erro ao iniciar o bot: {e}")
+            print(f"❌ ERRO FATAL: {e}") # Isso vai cuspir o erro real no log
     else:
-        print("❌ ERRO: DISCORD_TOKEN não encontrado!")
+        print("❌ ERRO: DISCORD_TOKEN está vazio no sistema.")
