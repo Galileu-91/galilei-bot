@@ -4,9 +4,21 @@ from discord.ui import Button, View
 import re
 import os
 import asyncio
+import sys
 from dotenv import load_dotenv
 from flask import Flask
 from threading import Thread
+
+# --- COMPATIBILIDADE DE ÁUDIO (BLINDAGEM TOTAL) ---
+try:
+    import audioop
+except ImportError:
+    # Se não encontrar, criamos um objeto vazio para o bot não travar no boot
+    import sys
+    from types import ModuleType
+    mock_audioop = ModuleType('audioop')
+    sys.modules['audioop'] = mock_audioop
+    print("⚠️ audioop simulado para evitar erros de boot.")
 
 # --- CONFIGURAÇÃO WEB (KEEP ALIVE) ---
 app = Flask('')
@@ -16,13 +28,13 @@ def home():
     return "Bot Galilei está Online!"
 
 def run():
-    # O Render define a porta automaticamente; se não houver, usa 10000
+    # Render usa porta dinâmica; se não achar, usa 10000
     port = int(os.environ.get("PORT", 10000))
     app.run(host='0.0.0.0', port=port)
 
 def keep_alive():
     t = Thread(target=run)
-    t.daemon = True # Garante que a thread feche com o bot
+    t.daemon = True
     t.start()
 
 # --- CONFIGURAÇÕES DO BOT ---
@@ -35,7 +47,7 @@ bot = commands.Bot(command_prefix='!', intents=intents)
 
 sessoes_usuarios = {}
 
-# --- INTERFACE DAS QUESTÕES ---
+# --- INTERFACE DAS QUESTÕES (LOGICA COMPLETA) ---
 class QuestaoView(View):
     def __init__(self, user_id, index, acertos, thread):
         super().__init__(timeout=360) 
@@ -66,6 +78,10 @@ class QuestaoView(View):
                         item.disabled = True
                 await self.message.edit(content=f"{self.message.content}\n\n⏰ **Tempo esgotado (240s)!**", view=self)
             except: pass
+
+    async def on_timeout(self):
+        try: await self.thread.delete()
+        except: pass
 
     async def resetar_simulado(self, interaction: discord.Interaction):
         if interaction.user.id != self.user_id:
@@ -103,7 +119,7 @@ class QuestaoView(View):
             nova_view.message = msg
         else:
             view_final = View()
-            btn_sair = Button(label="Finalizar e Apagar Sala", style=discord.ButtonStyle.danger, emoji="扫")
+            btn_sair = Button(label="Finalizar e Apagar Sala", style=discord.ButtonStyle.danger, emoji="🧹")
             btn_sair.callback = lambda it: asyncio.create_task(self.thread.delete())
             view_final.add_item(btn_sair)
 
@@ -117,15 +133,15 @@ class MenuSimulado(View):
     def __init__(self):
         super().__init__(timeout=None)
 
-    @discord.ui.button(label="Teste 1", style=discord.ButtonStyle.secondary, row=1)
+    @discord.ui.button(label="Teste de prova 1", style=discord.ButtonStyle.secondary, row=1)
     async def btn_plan(self, interaction: discord.Interaction, button: discord.ui.Button):
         await self.preparar_sala(interaction, "Teste de prova 1.txt")
 
-    @discord.ui.button(label="Teste 2", style=discord.ButtonStyle.secondary, row=1)
+    @discord.ui.button(label="Teste de prova 2", style=discord.ButtonStyle.secondary, row=1)
     async def btn_seg(self, interaction: discord.Interaction, button: discord.ui.Button):
         await self.preparar_sala(interaction, "Gestao Seguranca.txt")
 
-    @discord.ui.button(label="Teste 3", style=discord.ButtonStyle.secondary, row=2)
+    @discord.ui.button(label="Teste de prova 3", style=discord.ButtonStyle.secondary, row=2)
     async def btn_sad(self, interaction: discord.Interaction, button: discord.ui.Button):
         await self.preparar_sala(interaction, "Sistemas Apoio Decisao.txt")
 
