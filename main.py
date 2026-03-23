@@ -191,17 +191,17 @@ async def on_ready():
 # --- INICIALIZAÇÃO SEGURA ---
 if __name__ == "__main__":
     if TOKEN:
-        # 1. Inicia o Flask para o Render não dar timeout
+        # 1. Inicia o Flask
         keep_alive()
         
-        # 2. Aguarda um tempo maior para estabilizar a rede do Render
+        # 2. Aguarda estabilizar
         import time
-        print("⏳ Aguardando 30 segundos para limpar sessões antigas...")
-        time.sleep(30) 
+        print("⏳ Aguardando 30 segundos...")
+        time.sleep(30)
         
-        # 3. Tenta rodar o bot
+        # 3. Tenta rodar o bot (Alinhado com o keep_alive)
         try:
-            bot.run(TOKEN)
+            bot.run(TOKEN) # 4 espaços de recuo aqui
         except Exception as e:
             print(f"❌ Erro ao iniciar o bot: {e}")
     else:
