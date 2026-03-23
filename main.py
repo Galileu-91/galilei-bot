@@ -211,7 +211,9 @@ class MenuSimulado(View):
 if __name__ == "__main__":
     if TOKEN:
         keep_alive()  
-        print("📡 Servidor Keep-Alive sinalizando na porta do Render...")
+       import time
+        print("⏳ Aguardando 10 segundos para estabilizar conexão...")
+        time.sleep(10) # Dá um respiro para a rede
         bot.run(TOKEN)
     else:
         print("❌ ERRO: DISCORD_TOKEN não encontrado nas Environment Variables!")
