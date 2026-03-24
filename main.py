@@ -189,7 +189,7 @@ async def on_ready():
     print(f"✅ Galilei#0213 Online | Visual Alfredo | Sistema de Threads")
 
 # --- INICIALIZAÇÃO SEGURA (Versão Final) ---
-        if __name__ == "__main__":
+if __name__ == "__main__":
     if TOKEN:
         print("🚀 Iniciando servidor de manutenção...")
         keep_alive()
