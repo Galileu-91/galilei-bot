@@ -188,24 +188,38 @@ async def menu(ctx):
 async def on_ready():
     print(f"✅ Galilei#0213 Online | Visual Alfredo | Sistema de Threads")
 
-# --- INICIALIZAÇÃO SEGURA (Versão Final) ---
+@bot.command(name="limpar")
+@commands.has_permissions(manage_messages=True)
+async def limpar(ctx, quantidade: int = 100):
+    """Apaga as mensagens do canal (máximo 100 por vez)."""
+    try:
+        # Garante que não tente apagar mais de 100 (limite do Discord)
+        limite = min(quantidade, 100)
+        deleted = await ctx.channel.purge(limit=limite)
+        
+        # Envia confirmação que se apaga sozinha em 3 segundos
+        await ctx.send(f"🧹 {len(deleted)} mensagens limpas por ordem do Mano Gali!", delete_after=3)
+        print(f"✅ Faxina concluída no canal {ctx.channel.name}")
+    except Exception as e:
+        print(f"❌ Erro na limpeza: {e}")
+
 import threading
 
-# ... sua função keep_alive e o resto do código ...
-
+# --- INICIALIZAÇÃO SEGURA ---
 if __name__ == "__main__":
-    try:
-        # 1. Cria a Thread para o Flask (o site que mantém vivo)
+    if TOKEN:
+        print("🚀 Iniciando servidor de manutenção...")
+        # Cria a thread para o Flask não travar o bot
         t = threading.Thread(target=keep_alive)
-        t.daemon = True  # Isso faz a thread fechar se o programa principal fechar
+        t.daemon = True 
         t.start()
-        print("🌐 Servidor de manutenção iniciado na porta 10000")
 
-        # 2. Inicia o Bot (isso bloqueia a execução aqui, o que é o correto)
-        if TOKEN:
-            print("🤖 Acordando o Galileu...")
+        print("🤖 Tentando conectar o Galilei ao Discord...")
+        try:
+            # O bot.run deve ser a ÚLTIMA coisa, pois ele "trava" o código rodando
             bot.run(TOKEN)
-        else:
-            print("❌ Erro: Token não encontrado.")
-    except Exception as e:
-        print(f"⚠️ Ocorreu um erro ao iniciar: {e}")
+        except Exception as e:
+            # Isso vai cuspir o erro real no log (como o 429 de excesso de tentativas)
+            print(f"❌ ERRO FATAL: {e}")
+    else:
+        print("❌ ERRO: DISCORD_TOKEN está vazio no sistema.")
