@@ -1,5 +1,5 @@
 import time
-
+import random
 import discord
 from discord.ext import commands
 from discord.ui import Button, View
@@ -119,9 +119,37 @@ class QuestaoView(View):
             )
             nova_view.message = msg
         else:
+            # --- BLOCO ALTERADO PARA REPETIR ---
             view_final = View()
-            btn_sair = Button(label="Finalizar e Apagar Sala", style=discord.ButtonStyle.danger, emoji="🧹")
+            
+            # Botão para Repetir (Limpa e Reinicia)
+            btn_repetir = Button(label="Repetir Simulado", style=discord.ButtonStyle.success, emoji="🔄")
+            
+            async def repetir_callback(it: discord.Interaction):
+                await it.response.defer() # Evita o erro "interação falhou"
+                await self.thread.purge(limit=100) # Limpa a tela
+                # 🎲 EMBARALHA AS QUESTÕES (AQUI ESTÁ O SEGREDO!)
+                random.shuffle(sessoes_usuarios[self.user_id])
+
+                self.acertos = 0 # Zera os acertos
+                self.index = 0   # Volta para a primeira posição
+
+                # Reinicia a primeira questão do mesmo simulado
+                primeira_q = sessoes_usuarios[self.user_id][0]
+                nova_view = QuestaoView(self.user_id, 0, 0, self.thread)
+                msg = await self.thread.send(
+                    content=f"🎲 **Simulado Embaralhado! Boa sorte...**\n\n**Questão 1:**\n{primeira_q['pergunta']}", 
+                    view=nova_view
+                )
+                nova_view.message = msg
+
+            btn_repetir.callback = repetir_callback
+            
+            # Mantive o de apagar sala como segunda opção caso você queira fechar
+            btn_sair = Button(label="Apagar Sala", style=discord.ButtonStyle.danger, emoji="🧹")
             btn_sair.callback = lambda it: asyncio.create_task(self.thread.delete())
+            
+            view_final.add_item(btn_repetir)
             view_final.add_item(btn_sair)
 
             await self.thread.send(
@@ -134,24 +162,24 @@ class MenuSimulado(View):
     def __init__(self):
         super().__init__(timeout=None)
 
-    @discord.ui.button(label="Teste de prova 1", style=discord.ButtonStyle.secondary, row=1)
+    @discord.ui.button(label="Probabilidade e Estatística", style=discord.ButtonStyle.secondary, row=1)
     async def btn_plan(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await self.preparar_sala(interaction, "Teste de prova 1.txt")
+        await self.preparar_sala(interaction, "Probabilidade e Estatística.txt")
 
-    @discord.ui.button(label="Teste de prova 2", style=discord.ButtonStyle.secondary, row=1)
+    @discord.ui.button(label="Fundamentos de Sistemas de Informação", style=discord.ButtonStyle.secondary, row=1)
     async def btn_seg(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await self.preparar_sala(interaction, "Gestao Seguranca.txt")
+        await self.preparar_sala(interaction, "Fundamentos de Sistemas de Informação.txt")
 
-    @discord.ui.button(label="Teste de prova 3", style=discord.ButtonStyle.secondary, row=2)
+    @discord.ui.button(label="Fundamentos de Gestão Empresarial", style=discord.ButtonStyle.secondary, row=2)
     async def btn_sad(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await self.preparar_sala(interaction, "Sistemas Apoio Decisao.txt")
+        await self.preparar_sala(interaction, "Fundamentos de Gestão Empresarial.txt")
 
     async def preparar_sala(self, interaction, nome_arquivo):
         thread = await interaction.channel.create_thread(
             name=f"Estudo-{interaction.user.name}",
             type=discord.ChannelType.public_thread 
         )
-        await interaction.response.send_message(f"✅ Sala criada: {thread.mention}", ephemeral=True)
+        await interaction.response.send_message(f"✅ Sala criada, clique aqui👉🏼: {thread.mention}", ephemeral=True)
         await self.iniciar_logica(interaction, nome_arquivo, thread)
 
     async def iniciar_logica(self, interaction, nome_arquivo, thread):
@@ -171,6 +199,8 @@ class MenuSimulado(View):
             enunciado = re.split(r'A resposta correta é:|Resposta correta é:', bloco, flags=re.IGNORECASE)[0].strip()
             questoes_lista.append({"pergunta": enunciado[:1900], "correta": gabarito})
 
+        random.shuffle(questoes_lista)
+
         sessoes_usuarios[interaction.user.id] = questoes_lista
         view = QuestaoView(interaction.user.id, 0, 0, thread)
         msg = await thread.send(f"📖 **Iniciando: {nome_arquivo}**\n\n**Questão 1:**\n{questoes_lista[0]['pergunta']}", view=view)
@@ -181,7 +211,16 @@ class MenuSimulado(View):
 async def menu(ctx):
     embed = discord.Embed(
         title="📚 Central de Simulados (1/1)",
-        description="Selecione uma matéria abaixo para iniciar seu simulado em uma sala privada.",
+        description=
+            "Aqui estão as provas disponíveis neste servidor.\n"
+            "Você pode iniciar um simulado clicando no botão correspondente abaixo.\n\n"
+            "**Probabilidade e Estatística**\n"
+            "📌 Vinculado por: @Galileu Meirelles\n\n"
+            "**Fundamentos de Sistemas de Informação**\n"
+            "📌 Vinculado por: @Galileu Meirelles\n\n"
+            "**Fundamentos de Gestão Empresarial**\n"
+            "📌 Vinculado por: @Galileu Meirelles\n\n"
+            "🔹 *Clique em um dos botões abaixo para abrir sua sala privada!*",
         color=discord.Color.blue()
     )
     await ctx.send(embed=embed, view=MenuSimulado())
