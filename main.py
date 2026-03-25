@@ -200,7 +200,7 @@ class MenuSimulado(View):
         await interaction.response.send_message(f"✅ Sala criada, clique aqui👉🏼: {thread.mention}", ephemeral=True)
         await self.iniciar_logica(interaction, nome_arquivo, thread)
 
-   async def iniciar_logica(self, interaction, nome_arquivo, thread):
+    async def iniciar_logica(self, interaction, nome_arquivo, thread):
         caminho = os.path.join("Simulados", nome_arquivo)
         if not os.path.exists(caminho):
             return await thread.send(f"❌ Arquivo `{nome_arquivo}` não encontrado.")
@@ -208,14 +208,12 @@ class MenuSimulado(View):
         with open(caminho, 'r', encoding='utf-8') as f:
             conteudo = f.read()
 
-        # Separa por blocos de questões
         blocos = re.split(r'\n(?=#)', conteudo)
         questoes_lista = []
         
         for bloco in blocos:
             if not bloco.strip(): continue
             
-            # 1. Acha a letra da resposta (a, b, c ou d)
             res = re.search(r'resposta correta é:\s*([a-d])', bloco, re.IGNORECASE)
             letra_correta_original = res.group(1).lower() if res else "a"
 
@@ -226,18 +224,11 @@ class MenuSimulado(View):
             
             for linha in linhas:
                 linha_s = linha.strip()
-                # ✅ SÓ PEGA LINHA QUE COMEÇA COM LETRA E PONTO (a., b., c., d.)
-                # E IGNORA a linha que fala "a resposta correta é"
                 if re.match(r'^[a-d][\s\.)]', linha_s, re.IGNORECASE) and "resposta correta é" not in linha_s.lower():
-                    # Remove o "a. " do começo e guarda só o texto
                     txt = re.sub(r'^[a-d][\s\.)]+', '', linha_s).strip()
                     alternativas_limpas.append(txt)
-                    
-                    # Se essa linha era a correta no TXT original, guarda o texto dela
                     if linha_s.lower().startswith(letra_correta_original):
                         texto_da_resposta = txt
-                
-                # O que não é alternativa nem gabarito, vira enunciado
                 elif "resposta correta é" not in linha_s.lower() and "#" not in linha_s:
                     enunciado += linha + "\n"
 
@@ -248,21 +239,15 @@ class MenuSimulado(View):
                     "texto_correto": texto_da_resposta
                 })
 
-        # 2. EMBARALHAMENTO GERAL
         random.shuffle(questoes_lista)
         sessoes_usuarios[interaction.user.id] = questoes_lista
 
-        # 3. PREPARA A QUESTÃO 1 JÁ EMBARALHADA
         q = questoes_lista[0]
         alts_shuffled = list(q["alternativas"])
         random.shuffle(alts_shuffled)
         
-        # Monta o corpo da mensagem com as letras novas
         letras = ["a", "b", "c", "d"]
-        lista_formatada = []
-        for i, texto in enumerate(alts_shuffled):
-            if i < len(letras):
-                lista_formatada.append(f"{letras[i]}. {texto}")
+        lista_formatada = [f"{letras[i]}. {t}" for i, t in enumerate(alts_shuffled) if i < 4]
 
         corpo_final = f"{q['pergunta']}\n\n" + "\n".join(lista_formatada)
 
