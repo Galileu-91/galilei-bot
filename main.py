@@ -241,12 +241,12 @@ for linha in linhas:
                 else:
                     enunciado_acumulado.append(l_s)
 
-            # ✅ 4. Só adiciona se o bot realmente encontrou os dados
-            if alternativas_limpas and texto_correto:
-                questoes_lista.append({
-                    "pergunta": "\n".join(enunciado_acumulado),
-                    "alternativas": alternativas_limpas,
-                    "texto_correto": texto_correto
+    # ✅ 4. Só adiciona se o bot realmente encontrou os dados
+    if alternativas_limpas and texto_correto:
+        questoes_lista.append({
+        "pergunta": "\n".join(enunciado_acumulado),
+        "alternativas": alternativas_limpas,
+        "texto_correto": texto_correto
                 })
 
         if not questoes_lista:
