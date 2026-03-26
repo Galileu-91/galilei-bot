@@ -239,13 +239,11 @@ async def iniciar_logica(self, interaction, nome_arquivo, thread):
                 elif "resposta correta é" in l_s.lower():
                     continue
                 
-                
+
                 else:
                     # Se não é alternativa nem gabarito, É PERGUNTA
                     enunciado_acumulado.append(l_s)
 
-
-            
             if alternativas_limpas and texto_da_resposta:
                 questoes_lista.append({
                     "pergunta": "\n".join(enunciado_acumulado),
@@ -270,7 +268,6 @@ async def iniciar_logica(self, interaction, nome_arquivo, thread):
         lista_formatada = [f"{letras[i]}. {t}" for i, t in enumerate(alts_shuffled) if i < len(letras)]
 
         corpo_final = f"**{q['pergunta']}**\n\n" + "\n".join(lista_formatada)
-
 
         view = QuestaoView(interaction.user.id, 0, 0, thread)
         msg = await thread.send(
