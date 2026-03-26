@@ -209,7 +209,7 @@ async def iniciar_logica(self, interaction, nome_arquivo, thread):
             conteudo = f.read()
 
         # ✅ MELHORIA: Divide pelo # e ignora se tiver ponto ou espaço logo depois
-        blocos = [b.strip() for b in re.split(r'#\.?|s#', conteudo) if b.strip()]
+        blocos = [b.strip() for b in re.split(r'#\.?\s#', conteudo) if b.strip()]
         questoes_lista = []
         
         for bloco in blocos:
