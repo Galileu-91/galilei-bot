@@ -153,6 +153,7 @@ class QuestaoView(View):
             )
 
 # --- MENU PRINCIPAL (ESTILO ALFREDO) ---
+
 class MenuSimulado(View):
     def __init__(self):
         super().__init__(timeout=None)
@@ -167,56 +168,76 @@ class MenuSimulado(View):
     async def btn3(self, it, btn): await self.preparar_sala(it, "Fundamentos de Gestão Empresarial.txt")
 
     async def preparar_sala(self, interaction, nome_arquivo):
+        # 1. Cria a thread primeiro
         thread = await interaction.channel.create_thread(
             name=f"Estudo-{interaction.user.name}",
             type=discord.ChannelType.public_thread,
             auto_archive_duration=1440
         )
-        # ✅ LINK VOLTOU PARA O LUGAR CORRETO
+        
+        # 2. Responde UMA ÚNICA VEZ (Isso evita a duplicação e o erro de interação)
         await interaction.response.send_message(f"✅ Sala criada, clique aqui 👉 {thread.mention}", ephemeral=True)
+        
+        # 3. Chama a lógica de carregar as questões
         await self.iniciar_logica(interaction, nome_arquivo, thread)
 
     async def iniciar_logica(self, interaction, nome_arquivo, thread):
         caminho = os.path.join("Simulados", nome_arquivo)
         if not os.path.exists(caminho):
-            return await thread.send(f"❌ Arquivo `{nome_arquivo}` não encontrado.")
+            return await thread.send(f"❌ Arquivo `{nome_arquivo}` não encontrado no servidor.")
 
-        with open(caminho, "r", encoding="utf-8") as f:
-            blocos = f.read().split("---")
+        # Aviso visual na thread
+        msg_loading = await thread.send("📘 **Iniciando simulado...**")
 
-        questoes_lista = []
-        for bloco in blocos:
-            linhas = [l.strip() for l in bloco.strip().split('\n') if l.strip()]
-            q_data = {"pergunta": "", "alternativas": [], "texto_correto": ""}
-            alts_dict = {}
+        try:
+            with open(caminho, "r", encoding="utf-8") as f:
+                conteudo = f.read()
+                # Divide pelos separadores que colocamos nos arquivos novos
+                blocos = [b for b in conteudo.split("---") if b.strip()]
 
-            for linha in linhas:
-                if linha.startswith("QUESTAO:"):
-                    q_data["pergunta"] = linha.replace("QUESTAO:", "").strip()
-                elif linha.startswith(("A:", "B:", "C:", "D:")):
-                    letra = linha[0].upper()
-                    texto = linha[2:].strip()
-                    alts_dict[letra] = texto
-                    q_data["alternativas"].append(texto)
-                elif linha.startswith("GABARITO:"):
-                    gab = linha.replace("GABARITO:", "").strip().upper()
-                    if gab in alts_dict: q_data["texto_correto"] = alts_dict[gab]
+            questoes_lista = []
+            for bloco in blocos:
+                linhas = [l.strip() for l in bloco.strip().split('\n') if l.strip()]
+                q_data = {"pergunta": "", "alternativas": [], "texto_correto": ""}
+                alts_dict = {}
 
-            if q_data["pergunta"] and q_data["texto_correto"]:
-                questoes_lista.append(q_data)
+                for linha in linhas:
+                    if linha.upper().startswith("QUESTAO:"):
+                        q_data["pergunta"] = linha.split(":", 1)[1].strip()
+                    elif linha.upper().startswith(("A:", "B:", "C:", "D:")):
+                        letra = linha[0].upper()
+                        texto = linha[2:].strip()
+                        alts_dict[letra] = texto
+                        q_data["alternativas"].append(texto)
+                    elif linha.upper().startswith("GABARITO:"):
+                        gab = linha.split(":", 1)[1].strip().upper()
+                        if gab in alts_dict:
+                            q_data["texto_correto"] = alts_dict[gab]
 
-        if questoes_lista:
-            random.shuffle(questoes_lista)
-            sessoes_usuarios[interaction.user.id] = questoes_lista
-            q = questoes_lista[0]
-            alts = q["alternativas"].copy()
-            random.shuffle(alts)
-            opcoes = [f"{l}. {t}" for l, t in zip(["A", "B", "C", "D"], alts)]
-            view = QuestaoView(interaction.user.id, 0, 0, thread)
-            msg = await thread.send(content=f"📘 **Simulado iniciado!**\n\nQuestão 1:\n**{q['pergunta']}**\n\n" + "\n".join(opcoes), view=view)
-            view.message = msg
-        else:
-            await thread.send("⚠️ Erro: Formato do arquivo TXT inválido.")
+                if q_data["pergunta"] and q_data["texto_correto"]:
+                    questoes_lista.append(q_data)
+
+            if questoes_lista:
+                random.shuffle(questoes_lista)
+                sessoes_usuarios[interaction.user.id] = questoes_lista
+                
+                q = questoes_lista[0]
+                alts_embaralhadas = q["alternativas"].copy()
+                random.shuffle(alts_embaralhadas)
+                
+                opcoes_f = [f"{l}. {t}" for l, t in zip(["A", "B", "C", "D"], alts_embaralhadas)]
+                corpo = f"**{q['pergunta']}**\n\n" + "\n".join(opcoes_f)
+
+                view = QuestaoView(interaction.user.id, 0, 0, thread)
+                await msg_loading.delete() # Apaga o "carregando"
+                msg_final = await thread.send(content=f"Questão 1:\n{corpo}", view=view)
+                view.message = msg_final
+            else:
+                await thread.send("⚠️ Erro: Não encontrei questões válidas dentro do arquivo.")
+
+        except Exception as e:
+            print(f"Erro na leitura: {e}")
+            await thread.send(f"❌ Erro técnico ao ler o simulado.")
 
 # --- COMANDOS (SEU CABEÇALHO COMPLETO) ---
 @bot.command()
