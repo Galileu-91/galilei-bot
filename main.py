@@ -130,21 +130,32 @@ class QuestaoView(View):
                 await it.response.defer(ephemeral=True) 
                 async for msg in self.thread.history(limit=100):
                     await msg.delete()
-                random.shuffle(sessoes_usuarios[self.user_id])
-                nova_view = QuestaoView(self.user_id, 0, 0, self.thread)
-                q_ini = sessoes_usuarios[self.user_id][0]
-                alts = q_ini["alternativas"].copy()
-                random.shuffle(alts)
-                opcoes = [f"{l}. {t}" for l, t in zip(["A", "B", "C", "D"], alts)]
-                msg = await self.thread.send(content=f"🎲 **Simulado Reiniciado!**\n\nQuestão 1:\n**{q_ini['pergunta']}**\n\n" + "\n".join(opcoes), view=nova_view)
-                nova_view.message = msg
 
+                random.shuffle(sessoes_usuarios[self.user_id])
+                self.acertos = 0 
+                self.index = 0   
+
+                primeira_q = sessoes_usuarios[self.user_id][0]
+                alts = primeira_q["alternativas"].copy()
+                random.shuffle(alts)
+                
+                nova_view = QuestaoView(self.user_id, 0, 0, self.thread)
+                opcoes = [f"{l}. {t}" for l, t in zip(["A", "B", "C", "D"], alts)]
+                
+                msg = await self.thread.send(
+                    content=f"🎲 **Simulado Reiniciado!**\n\nQuestão 1:\n**{primeira_q['pergunta']}**\n\n" + "\n".join(opcoes), 
+                    view=nova_view
+                )
+                nova_view.message = msg
             btn_repetir.callback = repetir_callback
-            btn_sair = Button(label="Apagar Sala", style=discord.ButtonStyle.danger, emoji="🧹")
-            btn_sair.callback = lambda it: asyncio.create_task(self.thread.delete())
             
+            # ✅ O btn_sair foi removido daqui para o Galilei não "dormir" por engano
             view_final.add_item(btn_repetir)
-            view_final.add_item(btn_sair)
+
+            await self.thread.send(
+                content=f"{feedback}\n\n🏆 **Simulado Concluído!**\nAcertos: **{self.acertos}/{len(questoes)}**", 
+                view=view_final
+            )
 
             # ✅ CORREÇÃO DO ERRO DO VS CODE (self.acertos)
             await self.thread.send(
@@ -262,9 +273,21 @@ async def menu(ctx):
 @bot.command(name="limpar")
 @commands.has_permissions(manage_messages=True)
 async def limpar(ctx, quantidade: int = 100):
-    await ctx.message.delete()
-    deleted = await ctx.channel.purge(limit=min(quantidade, 100))
-    await ctx.send(f"🧹 {len(deleted)} mensagens limpas!", delete_after=3)
+    try:
+        # 1. Tenta apagar a mensagem do comando !limpar
+        await ctx.message.delete()
+        
+        # 2. Faz a limpeza (o purge funciona em Threads se o bot tiver permissão)
+        deleted = await ctx.channel.purge(limit=min(quantidade, 100))
+        
+        # 3. Feedback rápido e autodeletável
+        await ctx.send(f"🧹 Faxina concluída! {len(deleted)} mensagens removidas por ordem do Mano Gali.", delete_after=5)
+        print(f"✅ Limpeza executada por {ctx.author} em {ctx.channel.name}")
+
+    except discord.errors.Forbidden:
+        await ctx.send("❌ Erro: O Galilei não tem permissão de 'Gerenciar Mensagens' ou 'Gerenciar Threads' neste canal.")
+    except Exception as e:
+        print(f"❌ Erro no !limpar: {e}")
 
 @bot.event
 async def on_ready():
