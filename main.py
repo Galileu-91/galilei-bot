@@ -202,6 +202,7 @@ class MenuSimulado(View):
         auto_archive_duration=1440
     )
         await interaction.response.send_message(f"✅ Sala criada, clique aqui 👉 {thread.mention}", ephemeral=True)
+
         await self.iniciar_logica(interaction, nome_arquivo, thread)
 
     # ✅ libera a interaction (obrigatório)
@@ -224,8 +225,11 @@ class MenuSimulado(View):
 
 async def iniciar_logica(self, interaction, nome_arquivo, thread):
     caminho = os.path.join("Simulados", nome_arquivo)
+    if not os.path.exists(caminho):
+        return await thread.send(f"❌ Arquivo `{nome_arquivo}` não encontrado.")
+
     with open(caminho, "r", encoding="utf-8") as f:
-        # Divide pelos tracejados que coloquei no TXT
+        # Divide o arquivo pelos separadores ---
         blocos = f.read().split("---")
 
     questoes_lista = []
@@ -243,26 +247,31 @@ async def iniciar_logica(self, interaction, nome_arquivo, thread):
                 alts_dict[letra] = texto
                 q_data["alternativas"].append(texto)
             elif linha.startswith("GABARITO:"):
-                letra_gabarito = linha.replace("GABARITO:", "").strip().upper()
-                if letra_gabarito in alts_dict:
-                    q_data["texto_correto"] = alts_dict[letra_gabarito]
+                gabarito = linha.replace("GABARITO:", "").strip().upper()
+                if gabarito in alts_dict:
+                    q_data["texto_correto"] = alts_dict[gabarito]
 
         if q_data["pergunta"] and q_data["texto_correto"]:
             questoes_lista.append(q_data)
 
-    if questoes_lista:
-        random.shuffle(questoes_lista)
-        sessoes_usuarios[interaction.user.id] = questoes_lista
-        q = questoes_lista[0]
-        # Embaralha as letras para o usuário não decorar a posição
-        alts_random = q["alternativas"].copy()
-        random.shuffle(alts_random)
-        opcoes = [f"{l}. {t}" for l, t in zip(["A", "B", "C", "D"], alts_random)]
-        
-        view = QuestaoView(interaction.user.id, 0, 0, thread)
-        msg = await thread.send(content=f"📘 **Simulado iniciado!**\n\nQuestão 1:\n**{q['pergunta']}**\n\n" + "\n".join(opcoes), view=view)
-        view.message = msg
-        
+    if not questoes_lista:
+        return await thread.send("⚠️ O formato do TXT não é compatível. Use QUESTAO: e GABARITO:.")
+
+    # Embaralha e envia a primeira
+    random.shuffle(questoes_lista)
+    sessoes_usuarios[interaction.user.id] = questoes_lista
+    
+    q = questoes_lista[0]
+    alts_exibicao = q["alternativas"].copy()
+    random.shuffle(alts_exibicao)
+    
+    opcoes_texto = [f"{l}. {t}" for l, t in zip(["A", "B", "C", "D"], alts_exibicao)]
+    corpo = f"**{q['pergunta']}**\n\n" + "\n".join(opcoes_texto)
+
+    view = QuestaoView(interaction.user.id, 0, 0, thread)
+    msg = await thread.send(content=f"📘 **Simulado iniciado!**\n\nQuestão 1:\n{corpo}", view=view)
+    view.message = msg
+
     else:
         await thread.send("⚠️ Erro: Não consegui ler as questões no novo formato [# #].")
 # --- COMANDOS ---
