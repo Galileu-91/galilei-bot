@@ -223,41 +223,43 @@ class MenuSimulado(View):
 async def iniciar_logica(self, interaction, nome_arquivo, thread):
     caminho = os.path.join("Simulados", nome_arquivo)
     with open(caminho, "r", encoding="utf-8") as f:
-        conteudo = f.read()
+        blocos = f.read().split("---")
 
-    # Separa pelo fechamento do novo bloco #]
-    blocos = [b.strip() for b in conteudo.split("#]") if b.strip()]
     questoes_lista = []
-
     for bloco in blocos:
-        # Pega o enunciado entre [# e a primeira alternativa {a}
-        match_pergunta = re.search(r'\[#\s*(.*?)(?=\{[a-d]\})', bloco, re.DOTALL | re.IGNORECASE)
-        # Pega a letra dentro de <Resposta correta: x>
-        match_resp = re.search(r'<\s*Resposta correta:\s*([a-d])\s*>', bloco, re.IGNORECASE)
-        
-        if match_pergunta and match_resp:
-            pergunta = match_pergunta.group(1).strip()
-            letra_correta = match_resp.group(1).lower()
-            
-            alternativas = {}
-            # Pega as opções entre { }
-            for alt in re.findall(r'\{([a-d])\}\s*([^\n{<]+)', bloco, re.IGNORECASE):
-                alternativas[alt[0].lower()] = alt[1].strip()
+        linhas = [l.strip() for l in bloco.strip().split('\n') if l.strip()]
+        q_data = {"pergunta": "", "alternativas": [], "texto_correto": ""}
+        alts_dict = {}
 
-            if letra_correta in alternativas:
-                questoes_lista.append({
-                    "pergunta": pergunta,
-                    "alternativas": list(alternativas.values()),
-                    "texto_correto": alternativas[letra_correta]
-                })
+        for linha in linhas:
+            if linha.startswith("QUESTAO:"):
+                q_data["pergunta"] = linha.replace("QUESTAO:", "").strip()
+            elif linha.startswith(("A:", "B:", "C:", "D:")):
+                letra = linha[0].lower()
+                texto = linha[2:].strip()
+                alts_dict[letra] = texto
+                q_data["alternativas"].append(texto)
+            elif linha.startswith("GABARITO:"):
+                letra_gabarito = linha.replace("GABARITO:", "").strip().lower()
+                if letra_gabarito in alts_dict:
+                    q_data["texto_correto"] = alts_dict[letra_gabarito]
 
+        if q_data["pergunta"] and q_data["texto_correto"]:
+            questoes_lista.append(q_data)
+
+    # Inicia o Simulado
     if questoes_lista:
+        random.shuffle(questoes_lista)
         sessoes_usuarios[interaction.user.id] = questoes_lista
-        # Aqui ele envia a primeira questão para a thread que já foi aberta!
         q = questoes_lista[0]
-        corpo = f"**Questão 1:**\n{q['pergunta']}\n\n" + "\n".join([f"{l}. {t}" for l, t in zip(["a","b","c","d"], q['alternativas'])])
+        alts_random = q["alternativas"].copy()
+        random.shuffle(alts_random)
+        
+        opcoes_f = [f"{l}. {t}" for l, t in zip(["A", "B", "C", "D"], alts_random)]
+        corpo = f"**{q['pergunta']}**\n\n" + "\n".join(opcoes_f)
+
         view = QuestaoView(interaction.user.id, 0, 0, thread)
-        msg = await thread.send(content=corpo, view=view)
+        msg = await thread.send(content=f"📘 **Simulado iniciado!**\n\nQuestão 1:\n{corpo}", view=view)
         view.message = msg
     else:
         await thread.send("⚠️ Erro: Não consegui ler as questões no novo formato [# #].")
