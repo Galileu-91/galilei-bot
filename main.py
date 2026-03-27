@@ -85,30 +85,40 @@ class QuestaoView(View):
         await self.thread.delete()
 
     async def processar_clique(self, interaction: discord.Interaction):
+        # 1. Trava de ID (Segurança de usuário)
         if interaction.user.id != self.user_id:
             return await interaction.response.send_message("❌ Use sua própria sala!", ephemeral=True)
 
-        self.respondido = True
+        # ✅ 2. TRAVA DE DUPLICIDADE: Se já respondeu, ignora qualquer outro clique
+        if self.respondido:
+            return
+        
+        self.respondido = True # Tranca a porta aqui
+        
         escolha_letra = interaction.data['custom_id'].upper()
         questoes = sessoes_usuarios[self.user_id]
         q_atual = questoes[self.index]
 
+        # Lógica de busca da alternativa no conteúdo da mensagem
         mapeamento = self.message.content.split('\n')
         texto_escolhido = ""
         for linha in mapeamento:
             if linha.startswith(f"{escolha_letra}."):
                 texto_escolhido = linha.split(". ", 1)[1].strip()
 
+        # Validação da resposta
         if texto_escolhido.lower() == q_atual["texto_correto"].lower():
             self.acertos += 1
             feedback = f"✅ **Correto!**"
         else:
             feedback = f"❌ **Errado!** A resposta era: **{q_atual['texto_correto']}**"
 
+        # Remove os botões da questão atual após o clique
         await interaction.response.edit_message(view=None)
 
         proximo = self.index + 1
         if proximo < len(questoes):
+            # --- SEGUE PARA A PRÓXIMA QUESTÃO ---
             q_prox = questoes[proximo]
             alts_texto = q_prox["alternativas"].copy()
             random.shuffle(alts_texto)
@@ -123,6 +133,9 @@ class QuestaoView(View):
             )
             nova_view.message = msg
         else:
+            # --- FINALIZA O SIMULADO (TRAVA DE DUPLICIDADE FINAL) ---
+            self.stop() # Para qualquer processo pendente desta View
+            
             view_final = View()
             btn_repetir = Button(label="Repetir Simulado", style=discord.ButtonStyle.success, emoji="🔄")
             
@@ -130,38 +143,28 @@ class QuestaoView(View):
                 await it.response.defer(ephemeral=True) 
                 async for msg in self.thread.history(limit=100):
                     await msg.delete()
-
+                
                 random.shuffle(sessoes_usuarios[self.user_id])
-                self.acertos = 0 
-                self.index = 0   
-
-                primeira_q = sessoes_usuarios[self.user_id][0]
-                alts = primeira_q["alternativas"].copy()
+                nova_v = QuestaoView(self.user_id, 0, 0, self.thread)
+                q_ini = sessoes_usuarios[self.user_id][0]
+                alts = q_ini["alternativas"].copy()
                 random.shuffle(alts)
+                opcs = [f"{l}. {t}" for l, t in zip(["A", "B", "C", "D"], alts)]
                 
-                nova_view = QuestaoView(self.user_id, 0, 0, self.thread)
-                opcoes = [f"{l}. {t}" for l, t in zip(["A", "B", "C", "D"], alts)]
-                
-                msg = await self.thread.send(
-                    content=f"🎲 **Simulado Reiniciado!**\n\nQuestão 1:\n**{primeira_q['pergunta']}**\n\n" + "\n".join(opcoes), 
-                    view=nova_view
+                m = await self.thread.send(
+                    content=f"🎲 **Simulado Reiniciado!**\n\nQuestão 1:\n**{q_ini['pergunta']}**\n\n" + "\n".join(opcs), 
+                    view=nova_v
                 )
-                nova_view.message = msg
+                nova_v.message = m
+
             btn_repetir.callback = repetir_callback
-            
-            # ✅ O btn_sair foi removido daqui para o Galilei não "dormir" por engano
             view_final.add_item(btn_repetir)
 
+            # Envia o feedback final (Apenas uma vez devido à trava no início)
             await self.thread.send(
                 content=f"{feedback}\n\n🏆 **Simulado Concluído!**\nAcertos: **{self.acertos}/{len(questoes)}**", 
                 view=view_final
-            )
-
-            # ✅ CORREÇÃO DO ERRO DO VS CODE (self.acertos)
-            await self.thread.send(
-                content=f"{feedback}\n\n🏆 **Simulado Concluído!**\nAcertos: **{self.acertos}/{len(questoes)}**", 
-                view=view_final
-            )
+            )   
 
 # --- MENU PRINCIPAL (ESTILO ALFREDO) ---
 
