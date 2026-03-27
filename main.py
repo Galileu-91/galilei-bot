@@ -10,12 +10,9 @@ import sys
 from dotenv import load_dotenv
 from flask import Flask
 from threading import Thread
-
-import sys
 from types import ModuleType
 
 # --- BLINDAGEM CONTRA ERRO DE ÁUDIO ---
-# Isso engana o VS Code e o Render para não pedirem a biblioteca audioop
 if 'audioop' not in sys.modules:
     mock_audioop = ModuleType('audioop')
     sys.modules['audioop'] = mock_audioop
@@ -23,13 +20,10 @@ if 'audioop' not in sys.modules:
 
 # --- CONFIGURAÇÃO WEB (KEEP ALIVE) ---
 app = Flask('')
-
 @app.route('/')
-def home():
-    return "Bot Galilei está Online!"
+def home(): return "Bot Galilei está Online!"
 
 def run():
-    # Render usa porta dinâmica; se não achar, usa 10000
     port = int(os.environ.get("PORT", 10000))
     app.run(host='0.0.0.0', port=port)
 
@@ -48,7 +42,7 @@ bot = commands.Bot(command_prefix='!', intents=intents)
 
 sessoes_usuarios = {}
 
-# --- INTERFACE DAS QUESTÕES (LOGICA COMPLETA) ---
+# --- INTERFACE DAS QUESTÕES ---
 class QuestaoView(View):
     def __init__(self, user_id, index, acertos, thread):
         super().__init__(timeout=360) 
@@ -87,7 +81,6 @@ class QuestaoView(View):
     async def resetar_simulado(self, interaction: discord.Interaction):
         if interaction.user.id != self.user_id:
             return await interaction.response.send_message("❌ Não é sua sala!", ephemeral=True)
-        # ✅ Responde ao Discord antes de deletar a thread
         await interaction.response.send_message("Limpando sala...", ephemeral=True)
         await self.thread.delete()
 
@@ -100,13 +93,11 @@ class QuestaoView(View):
         questoes = sessoes_usuarios[self.user_id]
         q_atual = questoes[self.index]
 
-        # ✅ LÓGICA DE VALIDAÇÃO: Compara o texto da opção clicada com o texto correto
-        # Mapeia qual texto está em qual letra agora
         mapeamento = self.message.content.split('\n')
         texto_escolhido = ""
         for linha in mapeamento:
             if linha.startswith(f"{escolha_letra}."):
-                texto_escolhido = linha.replace(f"{escolha_letra}. ", "").strip()
+                texto_escolhido = linha.split(". ", 1)[1].strip()
 
         if texto_escolhido.lower() == q_atual["texto_correto"].lower():
             self.acertos += 1
@@ -118,14 +109,12 @@ class QuestaoView(View):
 
         proximo = self.index + 1
         if proximo < len(questoes):
-            # ✅ EMBARALHA AS LETRAS PARA A PRÓXIMA QUESTÃO
             q_prox = questoes[proximo]
-            alts_texto = [re.sub(r'^[a-d][\s\.)]+', '', a).strip() for a in q_prox["alternativas"]]
+            alts_texto = q_prox["alternativas"].copy()
             random.shuffle(alts_texto)
             
-            # Monta o novo texto com a., b., c., d.
-            novas_opcoes = [f"{l}. {t}" for l, t in zip(["a", "b", "c", "d"], alts_texto)]
-            corpo_questao = f"{q_prox['pergunta']}\n\n" + "\n".join(novas_opcoes)
+            novas_opcoes = [f"{l}. {t}" for l, t in zip(["A", "B", "C", "D"], alts_texto)]
+            corpo_questao = f"**{q_prox['pergunta']}**\n\n" + "\n".join(novas_opcoes)
 
             nova_view = QuestaoView(self.user_id, proximo, self.acertos, self.thread)
             msg = await self.thread.send(
@@ -133,153 +122,108 @@ class QuestaoView(View):
                 view=nova_view
             )
             nova_view.message = msg
-
         else:
-            # --- BLOCO ALTERADO PARA REPETIR ---
             view_final = View()
-            
-            # Botão para Repetir (Limpa e Reinicia)
             btn_repetir = Button(label="Repetir Simulado", style=discord.ButtonStyle.success, emoji="🔄")
             
             async def repetir_callback(it: discord.Interaction):
-                # ✅ Avisa o Discord para esperar o processo de limpeza (purge)
                 await it.response.defer(ephemeral=True) 
-                
                 async for msg in self.thread.history(limit=100):
                     await msg.delete()
-
                 random.shuffle(sessoes_usuarios[self.user_id])
-
-                self.acertos = 0 
-                self.index = 0   
-
-                primeira_q = sessoes_usuarios[self.user_id][0]
                 nova_view = QuestaoView(self.user_id, 0, 0, self.thread)
-                
-                # ✅ Texto ajustado para letra menor aqui também
-                msg = await self.thread.send(
-                    content=f"🎲 **Simulado Embaralhado!**\n\nQuestão 1:\n{primeira_q['pergunta']}", 
-                    view=nova_view
-                )
+                q_ini = sessoes_usuarios[self.user_id][0]
+                alts = q_ini["alternativas"].copy()
+                random.shuffle(alts)
+                opcoes = [f"{l}. {t}" for l, t in zip(["A", "B", "C", "D"], alts)]
+                msg = await self.thread.send(content=f"🎲 **Simulado Reiniciado!**\n\nQuestão 1:\n**{q_ini['pergunta']}**\n\n" + "\n".join(opcoes), view=nova_view)
                 nova_view.message = msg
 
             btn_repetir.callback = repetir_callback
-            
-            # Mantive o de apagar sala como segunda opção caso você queira fechar
             btn_sair = Button(label="Apagar Sala", style=discord.ButtonStyle.danger, emoji="🧹")
             btn_sair.callback = lambda it: asyncio.create_task(self.thread.delete())
             
             view_final.add_item(btn_repetir)
             view_final.add_item(btn_sair)
 
+            # ✅ CORREÇÃO DO ERRO DO VS CODE (self.acertos)
             await self.thread.send(
                 content=f"{feedback}\n\n🏆 **Simulado Concluído!**\nAcertos: **{self.acertos}/{len(questoes)}**", 
                 view=view_final
             )
 
-# --- MENU PRINCIPAL (VISUAL DO ALFREDO) ---
+# --- MENU PRINCIPAL (ESTILO ALFREDO) ---
 class MenuSimulado(View):
     def __init__(self):
         super().__init__(timeout=None)
 
     @discord.ui.button(label="Probabilidade e Estatística", style=discord.ButtonStyle.secondary, row=1)
-    async def btn_plan(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await self.preparar_sala(interaction, "Probabilidade e Estatística.txt")
+    async def btn1(self, it, btn): await self.preparar_sala(it, "Probabilidade e Estatística.txt")
 
     @discord.ui.button(label="Fundamentos de Sistemas de Informação", style=discord.ButtonStyle.secondary, row=1)
-    async def btn_seg(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await self.preparar_sala(interaction, "Fundamentos de Sistemas de Informação.txt")
+    async def btn2(self, it, btn): await self.preparar_sala(it, "Fundamentos de Sistemas de Informação.txt")
 
     @discord.ui.button(label="Fundamentos de Gestão Empresarial", style=discord.ButtonStyle.secondary, row=2)
-    async def btn_sad(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await self.preparar_sala(interaction, "Fundamentos de Gestão Empresarial.txt")
+    async def btn3(self, it, btn): await self.preparar_sala(it, "Fundamentos de Gestão Empresarial.txt")
 
     async def preparar_sala(self, interaction, nome_arquivo):
-    # ✅ cria a thread DESARQUIVADA
         thread = await interaction.channel.create_thread(
-        name=f"Estudo-{interaction.user.name}",
-        type=discord.ChannelType.public_thread,
-        auto_archive_duration=1440
-    )
+            name=f"Estudo-{interaction.user.name}",
+            type=discord.ChannelType.public_thread,
+            auto_archive_duration=1440
+        )
+        # ✅ LINK VOLTOU PARA O LUGAR CORRETO
         await interaction.response.send_message(f"✅ Sala criada, clique aqui 👉 {thread.mention}", ephemeral=True)
-
         await self.iniciar_logica(interaction, nome_arquivo, thread)
 
-    # ✅ libera a interaction (obrigatório)
-        await interaction.response.defer(ephemeral=True)
+    async def iniciar_logica(self, interaction, nome_arquivo, thread):
+        caminho = os.path.join("Simulados", nome_arquivo)
+        if not os.path.exists(caminho):
+            return await thread.send(f"❌ Arquivo `{nome_arquivo}` não encontrado.")
 
-    # ✅ AVISO IMEDIATO (debug + UX)
-        await thread.send("📘 Simulado iniciado... carregando questões")
+        with open(caminho, "r", encoding="utf-8") as f:
+            blocos = f.read().split("---")
 
-    # ✅ chama a lógica DIRETAMENTE (sem create_task)
-        await self.iniciar_logica(interaction, nome_arquivo, thread)
+        questoes_lista = []
+        for bloco in blocos:
+            linhas = [l.strip() for l in bloco.strip().split('\n') if l.strip()]
+            q_data = {"pergunta": "", "alternativas": [], "texto_correto": ""}
+            alts_dict = {}
 
-    # ✅ feedback ao usuário
-        await interaction.followup.send(
-        f"✅ Sala criada: {thread.mention}",
-        ephemeral=True
-    )
-    
-        await interaction.response.send_message(f"✅ Sala criada, clique aqui👉🏼: {thread.mention}", ephemeral=True)
-        await self.iniciar_logica(interaction, nome_arquivo, thread)
+            for linha in linhas:
+                if linha.startswith("QUESTAO:"):
+                    q_data["pergunta"] = linha.replace("QUESTAO:", "").strip()
+                elif linha.startswith(("A:", "B:", "C:", "D:")):
+                    letra = linha[0].upper()
+                    texto = linha[2:].strip()
+                    alts_dict[letra] = texto
+                    q_data["alternativas"].append(texto)
+                elif linha.startswith("GABARITO:"):
+                    gab = linha.replace("GABARITO:", "").strip().upper()
+                    if gab in alts_dict: q_data["texto_correto"] = alts_dict[gab]
 
-async def iniciar_logica(self, interaction, nome_arquivo, thread):
-    caminho = os.path.join("Simulados", nome_arquivo)
-    if not os.path.exists(caminho):
-        return await thread.send(f"❌ Arquivo `{nome_arquivo}` não encontrado.")
+            if q_data["pergunta"] and q_data["texto_correto"]:
+                questoes_lista.append(q_data)
 
-    with open(caminho, "r", encoding="utf-8") as f:
-        # Divide o arquivo pelos separadores ---
-        blocos = f.read().split("---")
+        if questoes_lista:
+            random.shuffle(questoes_lista)
+            sessoes_usuarios[interaction.user.id] = questoes_lista
+            q = questoes_lista[0]
+            alts = q["alternativas"].copy()
+            random.shuffle(alts)
+            opcoes = [f"{l}. {t}" for l, t in zip(["A", "B", "C", "D"], alts)]
+            view = QuestaoView(interaction.user.id, 0, 0, thread)
+            msg = await thread.send(content=f"📘 **Simulado iniciado!**\n\nQuestão 1:\n**{q['pergunta']}**\n\n" + "\n".join(opcoes), view=view)
+            view.message = msg
+        else:
+            await thread.send("⚠️ Erro: Formato do arquivo TXT inválido.")
 
-    questoes_lista = []
-    for bloco in blocos:
-        linhas = [l.strip() for l in bloco.strip().split('\n') if l.strip()]
-        q_data = {"pergunta": "", "alternativas": [], "texto_correto": ""}
-        alts_dict = {}
-
-        for linha in linhas:
-            if linha.startswith("QUESTAO:"):
-                q_data["pergunta"] = linha.replace("QUESTAO:", "").strip()
-            elif linha.startswith(("A:", "B:", "C:", "D:")):
-                letra = linha[0].upper()
-                texto = linha[2:].strip()
-                alts_dict[letra] = texto
-                q_data["alternativas"].append(texto)
-            elif linha.startswith("GABARITO:"):
-                gabarito = linha.replace("GABARITO:", "").strip().upper()
-                if gabarito in alts_dict:
-                    q_data["texto_correto"] = alts_dict[gabarito]
-
-        if q_data["pergunta"] and q_data["texto_correto"]:
-            questoes_lista.append(q_data)
-
-    if not questoes_lista:
-        return await thread.send("⚠️ O formato do TXT não é compatível. Use QUESTAO: e GABARITO:.")
-
-    # Embaralha e envia a primeira
-    random.shuffle(questoes_lista)
-    sessoes_usuarios[interaction.user.id] = questoes_lista
-    
-    q = questoes_lista[0]
-    alts_exibicao = q["alternativas"].copy()
-    random.shuffle(alts_exibicao)
-    
-    opcoes_texto = [f"{l}. {t}" for l, t in zip(["A", "B", "C", "D"], alts_exibicao)]
-    corpo = f"**{q['pergunta']}**\n\n" + "\n".join(opcoes_texto)
-
-    view = QuestaoView(interaction.user.id, 0, 0, thread)
-    msg = await thread.send(content=f"📘 **Simulado iniciado!**\n\nQuestão 1:\n{corpo}", view=view)
-    view.message = msg
-
-    else:
-        await thread.send("⚠️ Erro: Não consegui ler as questões no novo formato [# #].")
-# --- COMANDOS ---
+# --- COMANDOS (SEU CABEÇALHO COMPLETO) ---
 @bot.command()
 async def menu(ctx):
     embed = discord.Embed(
         title="📚 Central de Simulados (1/1)",
-        description=
+        description=(
             "Aqui estão as provas disponíveis neste servidor.\n"
             "Você pode iniciar um simulado clicando no botão correspondente abaixo.\n\n"
             "**Probabilidade e Estatística**\n"
@@ -288,50 +232,23 @@ async def menu(ctx):
             "📌 Vinculado por: @Galileu Meirelles\n\n"
             "**Fundamentos de Gestão Empresarial**\n"
             "📌 Vinculado por: @Galileu Meirelles\n\n"
-            "🔹 *Clique em um dos botões abaixo para abrir sua sala privada!*",
+            "🔹 *Clique em um dos botões abaixo para abrir sua sala privada!*"
+        ),
         color=discord.Color.blue()
     )
     await ctx.send(embed=embed, view=MenuSimulado())
+
+@bot.command(name="limpar")
+@commands.has_permissions(manage_messages=True)
+async def limpar(ctx, quantidade: int = 100):
+    await ctx.message.delete()
+    deleted = await ctx.channel.purge(limit=min(quantidade, 100))
+    await ctx.send(f"🧹 {len(deleted)} mensagens limpas!", delete_after=3)
 
 @bot.event
 async def on_ready():
     print(f"✅ Galilei#0213 Online | Visual Alfredo | Sistema de Threads")
 
-@bot.command(name="limpar")
-@commands.has_permissions(manage_messages=True)
-async def limpar(ctx, quantidade: int = 100):
-
-    try:
-        # ✅ Apaga o comando !limpar enviado pelo usuário primeiro
-        await ctx.message.delete()
-        
-        limite = min(quantidade, 100)
-        deleted = await ctx.channel.purge(limit=limite)
-        
-        await ctx.send(f"🧹 {len(deleted)} mensagens limpas por ordem do Mano Gali!", delete_after=3)
-        print(f"✅ Faxina concluída no canal {ctx.channel.name}")
-    except Exception as e:
-        print(f"❌ Erro na limpeza: {e}")
-
-import threading
-
-# --- INICIALIZAÇÃO SEGURA ---
 if __name__ == "__main__":
-    if TOKEN:
-        print("🚀 Iniciando servidor de manutenção...")
-        # Cria a thread para o Flask não travar o bot
-        t = threading.Thread(target=keep_alive)
-        t.daemon = True
-        t.start()
-
-        print("🤖 Tentando conectar o Galilei ao Discord...")
-        try:
-            bot.run(TOKEN) # O comando que pode dar erro fica dentro do try
-        except discord.errors.HTTPException as e:
-            if e.status == 429:
-                print("Rate limit detectado. Aguardando 30s...")
-                time.sleep(30) # Pausa técnica antes de qualquer tentativa automática
-            else:
-                print(f"Erro de conexão: {e}")
-    else:
-        print("❌ ERRO: DISCORD_TOKEN não encontrado nas variáveis de ambiente.")
+    keep_alive()
+    bot.run(TOKEN)
