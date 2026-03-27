@@ -81,3 +81,80 @@ B: Básica
 C: Avançada
 D: Inicial
 GABARITO: C
+---
+QUESTAO: Seu chefe lhe prometeu um aumento de 9% a partir do próximo mês. Para calcular seu novo salário basta:
+A:Multiplicar o valor atual por 0,09 e somar com 100
+B: Multiplicar o valor atual por 1,9
+C: Multiplicar o valor atual por 1,09
+D: Dividir o valor atual por 1,09
+GABARITO: C
+---
+QUESTOA: A Universidade utiliza em seu sistema de notas valores com apreciação de uma casa decimal, porém o valor decimal da nota só pode ser 5 décimos. Sabendo que a média mínima para aprovação em qualquer matéria é 7,0 e que o cálculo de sua média em uma determinada matéria resultou em 6,75. Você está:
+A: Reprovado
+B: Aprovado
+GABARITO: B
+---
+QUESTAO: A Universidade utiliza em seu sistema de notas valores com apreciação de uma casa decimal, porém o valor decimal da nota só pode ser 5 décimos. Sabendo que a média mínima para aprovação em qualquer matéria é 7,0 e que o cálculo de sua média em uma determinada matéria resultou em 6,74. Você está:
+A: Aprovado
+B: Reprovado
+GABARITO: B
+---
+QUESTAO: Associe os tipos de estatística à suas características
+I. Estatística inferencial Estatística Indutiva
+II. Empregada para caracterizar a amostra evidenciando suas principais características e propriedades Estatística descritiva
+III. Métodos e técnicas utilizados para estudar uma população baseando-se em amostras destas populações Estatística Indutiva
+A: I e II são Descritivas e III é Indutiva
+B: I e III são Descritivas e II é Indutiva
+C: III e I são Indutivas e II é Descritiva
+D: III e II são Indutivas e I é Descritiva
+GABARITO: C
+---
+QUESTAO: Observe os dados abaixo e informe qual alternativa está correta.
+Valor inicial 20
+Valor após 1 minuto 30
+Valor após 2 minutos 50
+Valor após 3 minutos 60
+Valor após 4 minutos 100
+A: Em 3 minutos o aumento foi de 60 unidades
+B: A cada minuto o aumento foi de 20 unidades
+C: Em 4 minutos o aumento foi de 80 unidades
+D: No último minuto o aumento foi muito menor
+GABARITO: C
+---
+QUESTAO: A tabela que chamamos de Rol é a que deve ter:
+A: Todas as frequências em ordem crescente ou decrescente.
+B: Todos os dados numéricos colhidos que se encontram em ordem crescente ou decrescente.
+C: Todos os dados colhidos.
+D: Rol não é uma tabela de dados colhidos.
+GABARITO: B
+---
+QUESTAO: Dados dois valores: Valor inicial 20 e valor final 50. Podemos dizer que o aumento percentual entre os dois valores foi
+A: 150%
+B: 60%
+C: 15%
+D: 167%
+GABARITO: A
+---
+QUESTAO: Você entrou em uma loja e o vendedor falou que todos os produtos estavam com desconto de 15% até o final da semana. Você se interessou por um sapato cujo preço de tabela é de R$ 59,99. Para saber o preço com desconto, basta multiplicar o valor 59,99 por:
+A: 1,15
+B: 0,75
+C: 0,85
+D: 0,15
+GABARITO: C
+---
+QUESTAO: Em uma distribuição de frequências, a frequência de classe, ou simplesmente Fi é:
+A: É a soma de todos os valores de frequências.
+B: Não existe frequência em uma distribuição de frequências.
+C: O número de vezes que o valor se repete na distribuição de frequências.
+D: O número de valores de cada intervalo de classe
+GABARITO: D
+---
+QUESTAO: Observe as afirmativas I, II e II abaixo e assinale alternativa correta a, b, c ou d.
+I. População, são todos os elementos, enquanto que amostra são elementos da população
+II. Amostra é um subconjunto finito de uma população.
+III. Amostragem são técnicas que garantem que a amostra seja significativa, ou seja, represente a população
+A: Todas as afirmativas estão erradas.
+B: Existe uma afirmativa errada e duas corretas.
+C: Todas as afirmativas estão corretas.
+D: Existe uma afirmativa correta e duas erradas
+GABARITO: C
