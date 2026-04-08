@@ -108,7 +108,7 @@ A: Existem duas afirmativas corretas
 B: Existe somente uma afirmativa correta
 C: Todas as afirmativas estão corretas
 D: Todas as afirmativas estão erradas
-GABARITO: D
+GABARITO: C
 ---
 QUESTAO: Dentre os sistemas utilizados na estrutura de TI de empresas estão os ERP, cuja sigla representa
 A: Enterprise Resource Planning
