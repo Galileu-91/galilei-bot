@@ -1,0 +1,68 @@
+QUESTAO: O que é memória virtual?
+A: Um tipo de memória usada exclusivamente pelo sistema operacional.
+B: Apenas uma técnica teórica sem uso prático.
+C: Memória física disponível no disco rígido.
+D: Uma técnica para acessar mais memória do que está fisicamente disponível.
+GABARITO: D
+---
+QUESTAO: O que é o contexto de hardware de um processo?
+A: O conteúdo dos registradores da CPU durante a execução do processo.
+B: As características e limites de recursos do processo.
+C: O ambiente onde o programa é executado.
+D: As informações sobre o programa armazenadas para continuação da execução.
+GABARITO: A
+---
+QUESTAO: Em que estado um processo está aguardando por algum evento externo ou recurso para continuar suaexecução?
+A: Execução (running).
+B: Espera (waiter).
+C: Pronto (ready).
+D: Inativo (inactive).
+GABARITO: B
+---
+QUESTAO: Qual é uma das principais responsabilidades do Gerenciamento de Memória?
+A: Gerenciar a alocação de energia.
+B: Controlar o acesso à internet.
+C: Controlar o uso da CPU.
+D: Coordenar o uso da memória no computador
+GABARITO: D
+---
+QUESTAO: O que marca a 3ª geração de sistemas operacionais?
+A: O desenvolvimento de linguagens de programação.
+B: A introdução de computadores pessoais.
+C: A capacidade de leitura de trabalhos de cartões para o disco.
+D: A criação de sistemas operacionais baseados em UNIX.
+GABARITO: C
+---
+QUESTAO: O que acontece durante a operação de swap de memória?
+A: A memória virtual é desativada temporariamente.
+B: A fragmentação de memória é resolvida automaticamente.
+C: Dados e instruções são transferidos da CPU para a memória física.
+D: Processos inativos são transferidos da memória física para o disco rígido
+GABARITO: D
+---
+QUESTAO: Qual é a principal vantagem das threads em computação?
+A: Maior custo de desenvolvimento de chips.
+B: Aumento de velocidade.
+C: Restrição no compartilhamento de recursos.
+D: Diminuição da eficiência energética.
+GABARITO: B
+---
+QUESTAO: Qual das seguintes gerações de computadores introduziu os sistemas operacionais para computadores pessoais?
+A: 3ª Geração - ICs e Multiprogramação.
+B: 2ª Geração - Transistors e Sistemas de lote (batch).
+C: 1ª Geração - Tubos de Vácuo.
+D: 4ª Geração - Computadores Pessoais.
+GABRITO: D
+---
+Quais são os sistemas operacionais mais comuns para smartphones?
+A: Unix, Linux, e iOS.
+B: Linux, macOS, e Windows.
+C: Android, iOS, e macOS.
+D: Android, iOS, e Windows Phone.
+GABARITO: D
+---
+QUESTAO: Qual é a função principal de um sistema operacional?
+A: Gerenciar apenas os recursos de um sistema complexo.
+B: Funcionar como uma ponte entre aplicações e hardware.
+C: Garantir a compatibilidade com diferentes programas.
+D: Apenas controlar a execução de tarefas.
