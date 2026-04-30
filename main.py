@@ -172,11 +172,11 @@ class MenuSimulado(View):
     def __init__(self):
         super().__init__(timeout=None)
 
-    @discord.ui.button(label="Probabilidade e Estatística", style=discord.ButtonStyle.secondary, row=1)
-    async def btn1(self, it, btn): await self.preparar_sala(it, "Probabilidade e Estatística.txt")
+    @discord.ui.button(label="Teoria dos Sistemas", style=discord.ButtonStyle.secondary, row=2)
+    async def btn1(self, it, btn): await self.preparar_sala(it, "Teoria dos Sistemas.txt")
 
-    @discord.ui.button(label="Fundamentos de Sistemas de Informação", style=discord.ButtonStyle.secondary, row=1)
-    async def btn2(self, it, btn): await self.preparar_sala(it, "Fundamentos de Sistemas de Informação.txt")
+    @discord.ui.button(label="Sistemas Operacionais", style=discord.ButtonStyle.secondary, row=2)
+    async def btn2(self, it, btn): await self.preparar_sala(it, "Sistemas Operacionais.txt")
 
     @discord.ui.button(label="Fundamentos de Gestão Empresarial", style=discord.ButtonStyle.secondary, row=2)
     async def btn3(self, it, btn): await self.preparar_sala(it, "Fundamentos de Gestão Empresarial.txt")
